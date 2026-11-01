@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package catalog;
+
+option go_package = "bookflow/gen/catalog;catalogpb";
+
+message Book {
+  string id        = 1;
+  string title     = 2;
+  string author    = 3;
+  int32  year      = 4;
+  string status    = 5;
+  repeated string tags = 6;
+  Publisher publisher = 7;
+}
+
+message Publisher {
+  string name    = 1;
+  string country = 2;
+}
+
+message GetBookRequest {
+  string id = 1;
+}
+
+message ListBooksRequest {
+  string author = 1;
+  string tag    = 2;
+  int32  limit  = 3;
+  int32  offset = 4;
+}
+
+message ListBooksResponse {
+  repeated Book books = 1;
+  int32 total = 2;
+}
+
+message CreateBookRequest {
+  string title  = 1;
+  string author = 2;
+  int32  year   = 3;
+  repeated string tags = 4;
+  Publisher publisher = 5;
+}
+
+message UpdateBookRequest {
+  string id = 1;
+  optional string title     = 2;
+  optional string author    = 3;
+  optional int32  year      = 4;
+  optional string status    = 5;
+  repeated string tags      = 6;
+  Publisher publisher       = 7;
+}
+
+message DeleteBookRequest {
+  string id = 1;
+}
+
+message DeleteBookResponse {
+  bool success = 1;
+}
+
+service CatalogService {
+  rpc GetBook(GetBookRequest) returns (Book);
+  rpc ListBooks(ListBooksRequest) returns (ListBooksResponse);
+  rpc CreateBook(CreateBookRequest) returns (Book);
+  rpc UpdateBook(UpdateBookRequest) returns (Book);
+  rpc DeleteBook(DeleteBookRequest) returns (DeleteBookResponse);
+}

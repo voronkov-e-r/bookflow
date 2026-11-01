@@ -13,7 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/grpc"
 
-	pb "bookflow/proto"
+	pb "bookflow/proto/auth"
 )
 
 func main() {

@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	pb "bookflow/proto"
+	pb "bookflow/proto/auth"
 )
 
 func main() {
