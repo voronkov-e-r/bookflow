@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package order;
+
+option go_package = "bookflow/gen/order;orderpb";
+
+message Order {
+  string id          = 1;
+  string user_id     = 2;
+  string book_id     = 3;
+  string book_title  = 4;
+  string status      = 5;   
+  int64  created_at  = 6;   
+}
+
+message CreateOrderRequest {
+  string user_id = 1;
+  string book_id = 2;
+}
+
+message GetOrderRequest {
+  string id = 1;
+}
+
+message ListOrdersRequest {
+  string user_id = 1;
+}
+
+message ListOrdersResponse {
+  repeated Order orders = 1;
+}
+
+message ReturnOrderRequest {
+  string id = 1;
+}
+
+service OrderService {
+  rpc CreateOrder(CreateOrderRequest) returns (Order);
+  rpc GetOrder(GetOrderRequest) returns (Order);
+  rpc ListOrders(ListOrdersRequest) returns (ListOrdersResponse);
+  rpc ReturnOrder(ReturnOrderRequest) returns (Order);
+}

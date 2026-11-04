@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pb "bookflow/proto/auth"
+	pb "bookflow/gen/auth"
 )
 
 type AuthServer struct {
