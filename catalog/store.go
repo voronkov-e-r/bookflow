@@ -47,7 +47,6 @@ func (s *Store) Get(ctx context.Context, id string) (*pb.Book, error) {
 
 func (s *Store) List(ctx context.Context, author, tag string, limit, offset int32) ([]*pb.Book, error) {
 	filter := bson.M{}
-
 	if author != "" {
 		filter["author"] = author
 	}
@@ -69,10 +68,58 @@ func (s *Store) List(ctx context.Context, author, tag string, limit, offset int3
 	}
 	defer cursor.Close(ctx)
 
-	var books []*pb.Book
-	if err = cursor.All(ctx, &books); err != nil {
+	var raw []bson.M
+	if err = cursor.All(ctx, &raw); err != nil {
 		return nil, err
 	}
+
+	books := make([]*pb.Book, 0, len(raw))
+	for _, r := range raw {
+		b := &pb.Book{}
+
+		if id, ok := r["_id"].(bson.ObjectID); ok {
+			b.Id = id.Hex()
+		}
+
+		// Достаем строки
+		if title, ok := r["title"].(string); ok {
+			b.Title = title
+		}
+		if author, ok := r["author"].(string); ok {
+			b.Author = author
+		}
+		if status, ok := r["status"].(string); ok {
+			b.Status = status
+		}
+
+		if year, ok := r["year"].(int32); ok {
+			b.Year = year
+		} else if year64, ok := r["year"].(int64); ok {
+			b.Year = int32(year64)
+		}
+
+		if tagsRaw, ok := r["tags"].(bson.A); ok {
+			for _, t := range tagsRaw {
+				if tStr, ok := t.(string); ok {
+					b.Tags = append(b.Tags, tStr)
+				}
+			}
+		}
+
+		if pubRaw, ok := r["publisher"].(bson.M); ok {
+			pub := &pb.Publisher{}
+			if name, ok := pubRaw["name"].(string); ok {
+				pub.Name = name
+			}
+			if country, ok := pubRaw["country"].(string); ok {
+				pub.Country = country
+			}
+			b.Publisher = pub
+		}
+
+		books = append(books, b)
+	}
+
 	return books, nil
 }
 
