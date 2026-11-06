@@ -22,14 +22,31 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	pool, err := pgxpool.New(ctx, "postgres://default:secret@localhost:5432/bookflow?sslmode=disable")
+	dbURL := os.Getenv("DB_URL")
+	if dbURL == "" {
+		dbURL = "postgres://default:secret@localhost:5432/bookflow?sslmode=disable"
+	}
+	rabbitURL := os.Getenv("RABBITMQ_URL")
+	if rabbitURL == "" {
+		rabbitURL = "amqp://admin:secret@localhost:5672/"
+	}
+	catalogAddr := os.Getenv("CATALOG_URL")
+	if catalogAddr == "" {
+		catalogAddr = "localhost:50052"
+	}
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = ":50053"
+	}
+
+	pool, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		log.Fatalf("Postgres connect error: %v", err)
 		os.Exit(1)
 	}
 	defer pool.Close()
 
-	mqConn, err := amqp091.Dial("amqp://admin:secret@localhost:5672/")
+	mqConn, err := amqp091.Dial(rabbitURL)
 	if err != nil {
 		log.Fatalf("RabbitMQ connect error: %v", err)
 		os.Exit(1)
@@ -48,7 +65,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	catalogConn, err := grpc.NewClient("localhost:50052", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	catalogConn, err := grpc.NewClient(catalogAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Catalog connection error: %v", err)
 		os.Exit(1)
@@ -60,7 +77,7 @@ func main() {
 	store := NewStore(pool)
 	server := NewOrderServer(store, catalogClient, mqChannal)
 
-	lis, err := net.Listen("tcp", ":50053")
+	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("Listen service error: %v", err)
 		os.Exit(1)
@@ -77,6 +94,6 @@ func main() {
 		grpcServer.GracefulStop()
 	}()
 
-	log.Println("Order gRPC listening on :50053")
+	log.Printf("Order gRPC listening on %s\n", port)
 	grpcServer.Serve(lis)
 }

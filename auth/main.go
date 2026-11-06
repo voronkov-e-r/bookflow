@@ -20,7 +20,16 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	pool, err := pgxpool.New(ctx, "postgres://default:secret@localhost:5432/bookflow?sslmode=disable")
+	dbURL := os.Getenv("DB_URL")
+	if dbURL == "" {
+		dbURL = "postgres://default:secret@localhost:5432/bookflow?sslmode=disable"
+	}
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = ":50051"
+	}
+
+	pool, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		slog.Error("db connect failed", "err", err)
 		os.Exit(1)
@@ -36,7 +45,7 @@ func main() {
 	store := NewStore(pool)
 	authServer := NewAuthServer(store, "super-secret-key")
 
-	lis, err := net.Listen("tcp", ":50051")
+	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
@@ -52,7 +61,7 @@ func main() {
 		grpcServer.GracefulStop()
 	}()
 
-	log.Println("Auth gRPC server listening on :50051")
+	log.Printf("Auth gRPC server listening on %s\n", port)
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}

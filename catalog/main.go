@@ -22,7 +22,16 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	client, err := mongo.Connect(options.Client().ApplyURI("mongodb://admin:secret@localhost:27017/?authSource=admin"))
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://admin:secret@localhost:27017/?authSource=admin"
+	}
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = ":50052"
+	}
+
+	client, err := mongo.Connect(options.Client().ApplyURI(mongoURI))
 	if err != nil {
 		slog.Error("mongo connect", "err", err)
 		os.Exit(1)
@@ -38,7 +47,7 @@ func main() {
 	store := NewStore(client)
 	server := NewCatalogServer(store)
 
-	lis, err := net.Listen("tcp", ":50052")
+	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("listen: %v", err)
 	}
@@ -54,6 +63,6 @@ func main() {
 		grpcServer.GracefulStop()
 	}()
 
-	log.Println("Catalog gRPC listening on :50052")
+	log.Printf("Catalog gRPC listening on %s\n", port)
 	grpcServer.Serve(lis)
 }

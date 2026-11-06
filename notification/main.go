@@ -26,7 +26,12 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	conn, err := amqp091.Dial("amqp://admin:secret@localhost:5672/")
+	rabbitURL := os.Getenv("RABBITMQ_URL")
+	if rabbitURL == "" {
+		rabbitURL = "amqp://admin:secret@localhost:5672/"
+	}
+
+	conn, err := amqp091.Dial(rabbitURL)
 	if err != nil {
 		log.Fatalf("RabbitMQ connection error: %v", err)
 	}

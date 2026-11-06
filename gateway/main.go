@@ -25,13 +25,30 @@ type Gateway struct {
 }
 
 func main() {
-	authConn, _ := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	authAddr := os.Getenv("AUTH_URL")
+	if authAddr == "" {
+		authAddr = "localhost:50051"
+	}
+	catalogAddr := os.Getenv("CATALOG_URL")
+	if catalogAddr == "" {
+		catalogAddr = "localhost:50052"
+	}
+	orderAddr := os.Getenv("ORDER_URL")
+	if orderAddr == "" {
+		orderAddr = "localhost:50053"
+	}
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = ":8080"
+	}
+
+	authConn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	defer authConn.Close()
 
-	catalogConn, _ := grpc.NewClient("localhost:50052", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	catalogConn, _ := grpc.NewClient(catalogAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	defer catalogConn.Close()
 
-	orderConn, _ := grpc.NewClient("localhost:50053", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	orderConn, _ := grpc.NewClient(orderAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	defer orderConn.Close()
 
 	gw := &Gateway{
@@ -57,7 +74,7 @@ func main() {
 	mux.HandleFunc("POST /api/orders/{id}/return", gw.handleReturnOrder)
 
 	httpSrv := &http.Server{
-		Addr:         ":8080",
+		Addr:         port,
 		Handler:      mux,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
@@ -65,7 +82,7 @@ func main() {
 	}
 
 	go func() {
-		slog.Info("gateway starting", "port", "8080")
+		slog.Info("gateway starting", "port", port)
 		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("server: %v", err)
 		}
